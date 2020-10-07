@@ -15,21 +15,24 @@ namespace Es_01_Calculator_Project
     public partial class FormMain : Form
     {
         //private char[,] bottoni = new char[6,4];
-        public struct strutturabottoni
+        public struct ButtonStruct
         {
             public char Content;
-            public bool isBold;
-            public bool isNumber;
-            public bool isDecimalSeparator;
-            public bool isPlusMinusSign;
-
-            public strutturabottoni(char Content, bool isBold, bool isNumber=true,bool isDecimalSeparator=true,bool isPlusMinusSign=false)
+            public bool IsBold;
+            public bool IsNumber;
+            public bool IsDecimalSeparator;
+            public bool IsPlusMinusSign;
+            public bool IsOperator;
+            public bool IsEqualSign;
+            public ButtonStruct(char content, bool isBold, bool isNumber = false, bool isDecimalSeparator = false, bool isPlusMinusSign = false, bool isOperator = false, bool isEqualSign = false)
             {
-                this.Content = Content;
-                this.isBold = isBold;
-                this.isNumber = isNumber;
-                this.isDecimalSeparator = isDecimalSeparator;
-                this.isPlusMinusSign = isPlusMinusSign;
+                this.Content = content;
+                this.IsBold = isBold;
+                this.IsNumber = isNumber;
+                this.IsDecimalSeparator = isDecimalSeparator;
+                this.IsPlusMinusSign = isPlusMinusSign;
+                this.IsOperator = isOperator;
+                this.IsEqualSign = isEqualSign;
             }
             public override string ToString()
             {
@@ -37,102 +40,201 @@ namespace Es_01_Calculator_Project
             }
 
         };
-        private strutturabottoni[,] button =
+        private ButtonStruct[,] buttons =
         {
-            {new strutturabottoni('%',false),new strutturabottoni('ɶ',false),new strutturabottoni('c',false),new strutturabottoni('C',false), },
-            {new strutturabottoni(' ',false),new strutturabottoni(' ',false),new strutturabottoni(' ',false),new strutturabottoni('÷',false) },
-            {new strutturabottoni('7',false,false),new strutturabottoni('8',false,false),new strutturabottoni('9',false,false),new strutturabottoni('x',false) },
-            {new strutturabottoni('4',false,false),new strutturabottoni('5',false,false),new strutturabottoni('6',false,false),new strutturabottoni('-',false) },
-            {new strutturabottoni('1',false,false),new strutturabottoni('2',false,false),new strutturabottoni('3',false,false),new strutturabottoni('+',false) },
-            {new strutturabottoni('±',false,false,false,true),new strutturabottoni('0',false,false),new strutturabottoni(',',false,true,true),new strutturabottoni('=',false) },
+            {new ButtonStruct('%',false),new ButtonStruct('ɶ',false),new ButtonStruct('C',false),new ButtonStruct('⩤',false) },
+            {new ButtonStruct(' ',false),new ButtonStruct(' ',false),new ButtonStruct(' ',false),new ButtonStruct('÷',false, false, false, false, true) },
+            {new ButtonStruct('7',true, true),new ButtonStruct('8',true, true),new ButtonStruct('9',true, true),new ButtonStruct('x',false, false, false, false, true) },
+            {new ButtonStruct('4',true, true),new ButtonStruct('5',true, true),new ButtonStruct('6',true, true),new ButtonStruct('-',false, false, false, false, true) },
+            {new ButtonStruct('1',true, true),new ButtonStruct('2',true, true),new ButtonStruct('3',true, true),new ButtonStruct('+',false ,false, false, false, true) },
+            {new ButtonStruct('±',false, false, false, true),new ButtonStruct('0',true, true),new ButtonStruct(',',false, false, true),new ButtonStruct('=',false ,false, false, false, true, true) },
 
         };
+        private RichTextBox resultBox;
+
+        private const char ASCIIZERO = '\x0000';
+        private double operand1, operand2, result;
+        private char lastOperator;
+        private ButtonStruct lastButtonClicked;
         public FormMain()
         {
             InitializeComponent();
         }
-        private RichTextBox txt;
-        
+
         private void FormMain_Load(object sender, EventArgs e)
         {
-            Makebuttons(button);
-            MakeresultsBox();
+            Makebuttons(buttons);
+            MakeResultsBox();
         }
-        private void MakeresultsBox()
+        private void MakeResultsBox()
         {
-            txt = new RichTextBox();
-            txt.ReadOnly = true;
-            txt.SelectionAlignment = HorizontalAlignment.Right;
-            txt.Font = new Font("Segoe UI", 22);
-            txt.Width = this.Width - 16;
-            txt.Height = 50;
-            txt.Top = 20;
-            txt.Text = "0";
-            this.Controls.Add(txt);
+            resultBox = new RichTextBox();
+            resultBox.ReadOnly = true;
+            resultBox.SelectionAlignment = HorizontalAlignment.Right;
+            resultBox.Font = new Font("Segoe UI", 22);
+            resultBox.Width = this.Width - 16;
+            resultBox.Height = 50;
+            resultBox.Top = 20;
+            resultBox.Text = "0";
+            resultBox.TabStop = false;
+            resultBox.TextChanged += ResultBox_TextChanged; // per capire quando devo andare a ridurre il carattere
+            this.Controls.Add(resultBox);
         }
-        private void Makebuttons(strutturabottoni[,] bottoni)
+
+        private void ResultBox_TextChanged(object sender, EventArgs e)
         {
-            int buttonWidth = 78;
-            int buttonHeight = 50;
-            int posx = 0;
-            int posy = 131;
+            int newSize = 22 + (15 - resultBox.Text.Length);
+            if (newSize > 8 && newSize < 23)
+            {
+                resultBox.Font = new Font("Segoe UI", newSize);
+            }
+        }
+
+        private void Makebuttons(ButtonStruct[,] bottoni)
+        {
+            int buttonWidth = 82;
+            int buttonHeight = 60;
+            int posX = 0;
+            int posY = 101;
 
             for (int i = 0; i < bottoni.GetLength(0); i++)
             {
                 for (int j = 0; j < bottoni.GetLength(1); j++)
                 {
-                    strutturabottoni bs = bottoni[i, j];
-                    Button newbutton = new Button();
-                    newbutton.Text = bottoni[i, j].Content.ToString();
-                    newbutton.Width = buttonWidth;
-                    newbutton.Height = buttonHeight;
-                    newbutton.Left = posx;
-                    newbutton.Top = posy;
-                    newbutton.Tag = bs;
-                    newbutton.Click += Button_Click;
-                    this.Controls.Add(newbutton);
-                    posx += buttonWidth;
+                    Button newButton = new Button();
+                    newButton.Font = new Font("Segoe UI", 16);
+                    ButtonStruct bs = buttons[i, j];
+                    //newButton.Text = bottoni[i, j].Content.ToString();
+                    newButton.Text = bs.ToString();
+                    if (bs.IsBold)
+                    {
+                        newButton.Font = new Font(newButton.Font, FontStyle.Bold);
+                    }
+                    newButton.Width = buttonWidth;
+                    newButton.Height = buttonHeight;
+                    newButton.Left = posX;
+                    newButton.Top = posY;
+                    newButton.Tag = bs;
+                    newButton.Click += Button_Click;
+                    this.Controls.Add(newButton);
+                    posX += buttonWidth;
                 }
-                posx = 0;
-                posy += buttonHeight;
-
+                posX = 0;
+                posY += buttonHeight;
             }
         }
 
         private void Button_Click(object sender, EventArgs e)
         {
-            
             Button clickedButton = (Button)sender;
-            strutturabottoni bs = (strutturabottoni)clickedButton.Tag;
-            //MessageBox.Show("Button: "+clickedButton.Text);
-        
-            if(!bs.isNumber)
+            ButtonStruct bs = (ButtonStruct)clickedButton.Tag;
+            if (bs.IsNumber)
             {
-                if(txt.Text=="0")
+                if (lastButtonClicked.IsEqualSign)
                 {
-                    txt.Text = "";
+                    clearAll();
                 }
-                txt.Text += clickedButton.Text;
+                if (resultBox.Text == "0" || lastButtonClicked.IsOperator)
+                {
+                    resultBox.Text = "";    // tolgo lo 0
+                }
+                resultBox.Text += clickedButton.Text;
             }
             else
             {
-                if(bs.isDecimalSeparator)
+                if (bs.IsDecimalSeparator)
                 {
-                    if(!txt.Text.Contains(bs.Content))
+                    if (!resultBox.Text.Contains(bs.Content.ToString()))
                     {
-                        txt.Text += clickedButton.Text;
+                        resultBox.Text += clickedButton.Text;
                     }
                 }
-                if(bs.isPlusMinusSign)
+                if (bs.IsPlusMinusSign)
                 {
-                    if (!txt.Text.Contains("-"))
+                    if (!resultBox.Text.Contains("-"))
                     {
-                        txt.Text = "-"+txt.Text;
+                        resultBox.Text = "-" + resultBox.Text;
                     }
                     else
                     {
-                        txt.Text = txt.Text.Replace("-", "");
+                        resultBox.Text = resultBox.Text.Replace("-", "");
                     }
+                }
+                else
+                {
+                    switch (bs.Content)
+                    {
+                        case 'C':
+                            clearAll();
+                            break;
+                        case '⩤':
+                            resultBox.Text = resultBox.Text.Remove(resultBox.Text.Length - 1);  // tolgo l'ultimo elemento
+                            if (resultBox.Text.Length == 0 || resultBox.Text == "-0" || resultBox.Text == "-")
+                            {
+                                resultBox.Text = "0";
+                            }
+                            break;
+                        default:
+                            if (bs.IsOperator) manageOperators(bs);
+                            break;
+                    }
+                }
+            }
+            lastButtonClicked = bs;
+        }
+
+        private void clearAll(double numberToWrite = 0)
+        {
+            operand1 = 0;
+            operand2 = 0;
+            result = 0;
+            lastOperator = ASCIIZERO;
+            resultBox.Text = numberToWrite.ToString();
+        }
+
+        private void manageOperators(ButtonStruct bs)
+        {
+            if (lastOperator == ASCIIZERO) // o all'inizio o dopo un =
+            {
+                operand1 = double.Parse(resultBox.Text);
+                lastOperator = bs.Content;
+            }
+            else
+            {
+                if (lastButtonClicked.IsOperator && !lastButtonClicked.IsEqualSign)
+                {
+                    lastOperator = bs.Content;
+                }
+                else
+                {
+                    if (!lastButtonClicked.IsEqualSign)
+                    {
+                        operand2 = double.Parse(resultBox.Text);
+                    }
+                    switch (lastOperator)
+                    {
+                        case '+':
+                            result = operand1 + operand2;
+                            break;
+                        case '-':
+                            result = operand1 - operand2;
+                            break;
+                        case 'x':
+                            result = operand1 * operand2;
+                            break;
+                        case '÷':
+                            result = operand1 / operand2;
+                            break;
+                        default:
+                            break;
+                    }
+                    if (!bs.IsEqualSign)
+                    {
+                        lastOperator = bs.Content;
+                        operand2 = 0;
+                    }
+                    operand1 = result;
+                    resultBox.Text = result.ToString();
                 }
             }
         }
